@@ -104,5 +104,41 @@ namespace ProjectPRN232.Controllers.Auth
             return Ok(new { message = "Register success", token});
 
         }
+
+        [HttpPost("google")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            var user = await _context.People
+                .FirstOrDefaultAsync(x => x.Email == request.Email);
+            if (user == null)
+            {
+                user = new Person
+                {
+                    UserName = request.Email,
+                    Password = Guid.NewGuid().ToString(),
+                    Fname = request.FName,
+                    Lname = request.LName,
+                    Email = request.Email,
+                    RoleAccount = false,
+                    Balance = 0
+                };
+                _context.People.Add(user);
+                await _context.SaveChangesAsync();
+            }
+            var token = GenerateJwtToken(user);
+            return Ok(new
+            {
+                token,
+                user = new
+                {
+                    user.PersonId,
+                    user.UserName,
+                    user.RoleAccount,
+                    user.Balance
+                }
+            });
+        }
+
+
     }
 }
