@@ -25,7 +25,7 @@ public partial class Person
 
     public string? PathImagePerson { get; set; }
 
-    public bool? RoleAccount { get; set; }
+    public bool RoleAccount { get; set; }
 
     public double? Balance { get; set; }
 

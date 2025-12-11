@@ -1,0 +1,15 @@
+﻿# Visual Studio / .NET build
+.vs/
+bin/
+obj/
+
+# user settings
+*.user
+*.suo
+
+# publish
+publish/
+
+# backup & temp
+*.log
+*.tmp
