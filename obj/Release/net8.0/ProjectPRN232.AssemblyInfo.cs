@@ -12,9 +12,9 @@ using System;
 using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProjectPRN232")]
-[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b77ea083e717959576a689848ac5dcede4cd3318")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+605cbe7af64786f19b12dad387d2caf0393446dc")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProjectPRN232")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProjectPRN232")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
