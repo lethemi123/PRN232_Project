@@ -20,6 +20,8 @@ builder.Services.AddDbContext<Prn212AssignmentContext>(options =>
 // ============================
 builder.Services.AddDataProtection();
 builder.Services.AddScoped<ResetTokenService>();
+builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<Cart>();
 builder.Services.AddScoped<Order>();
 

@@ -18,3 +18,4 @@ D:\block5_thang12\ProjectPRN232\WebSite\obj\Debug\net8.0\staticwebassets.build.j
 D:\block5_thang12\ProjectPRN232\WebSite\obj\Debug\net8.0\staticwebassets.build.json
 D:\block5_thang12\ProjectPRN232\WebSite\obj\Debug\net8.0\staticwebassets.build.json
 D:\block5_thang12\ProjectPRN232\WebSite\obj\Debug\net8.0\staticwebassets.build.json
+D:\block5_thang12\ProjectPRN232\WebSite\obj\Debug\net8.0\staticwebassets.build.json

@@ -26,8 +26,6 @@
 
   <ItemGroup>
     <Folder Include="Data\" />
-    <Folder Include="DTO\Cart\" />
-    <Folder Include="DTO\Order\" />
   </ItemGroup>
 
   <ItemGroup>

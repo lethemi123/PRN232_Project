@@ -1,107 +1,76 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ProjectPRN232.Models;
+using ProjectPRN232.DTO.Cart;
+using ProjectPRN232.Services;
+using System.Security.Claims;
 
-namespace ProjectPRN232.Controllers.User
+namespace ProjectPRN232.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class CartsController : ControllerBase
+    [Route("api/cart")]
+    [Authorize]
+    public class CartController : ControllerBase
     {
-        private readonly Prn212AssignmentContext _context;
+        private readonly CartService _service;
+        public CartController(CartService service) => _service = service;
 
-        public CartsController(Prn212AssignmentContext context)
+        private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        // Add theo VariantId (user chọn 125/256 rồi add)
+        [HttpPost("items")]
+        public async Task<IActionResult> Add([FromBody] AddToCartRequest req)
         {
-            _context = context;
-        }
-
-        // GET: api/Carts
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetCarts()
-        {
-            return await _context.Carts.ToListAsync();
-        }
-
-        // GET: api/Carts/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Cart>> GetCart(int id)
-        {
-            var cart = await _context.Carts.FindAsync(id);
-
-            if (cart == null)
-            {
-                return NotFound();
-            }
-
-            return cart;
-        }
-
-        // PUT: api/Carts/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCart(int id, Cart cart)
-        {
-            if (id != cart.CartId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(cart).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                await _service.AddToCart(UserId, req.variantId, req.quantity);
+                return Ok(new { message = "Added to cart" });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!CartExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest(new { message = ex.Message });
             }
-
-            return NoContent();
         }
 
-        // POST: api/Carts
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Cart>> PostCart(Cart cart)
+        [HttpGet]
+        public async Task<IActionResult> Get()
         {
-            _context.Carts.Add(cart);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCart", new { id = cart.CartId }, cart);
+            var data = await _service.GetCart(UserId);
+            return Ok(data);
         }
 
-        // DELETE: api/Carts/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCart(int id)
+        [HttpDelete("items/{cartId:int}")]
+        public async Task<IActionResult> Remove(int cartId)
         {
-            var cart = await _context.Carts.FindAsync(id);
-            if (cart == null)
+            await _service.RemoveItem(UserId, cartId);
+            return Ok(new { message = "Removed" });
+        }
+
+        [HttpPut("items/{cartId:int}/quantity")]
+        public async Task<IActionResult> UpdateQty(int cartId, [FromBody] UpdateCartQtyRequest req)
+        {
+            try
             {
-                return NotFound();
+                await _service.UpdateQuantity(UserId, cartId, req.Quantity);
+                return Ok(new { message = "Updated quantity" });
             }
-
-            _context.Carts.Remove(cart);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        private bool CartExists(int id)
+        [HttpPut("items/{cartId:int}/select")]
+        public async Task<IActionResult> ToggleSelect(int cartId, [FromBody] ToggleSelectRequest req)
         {
-            return _context.Carts.Any(e => e.CartId == id);
+            try
+            {
+                await _service.ToggleSelect(UserId, cartId, req.IsSelected);
+                return Ok(new { message = "Updated selection" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }
