@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using ProjectPRN232.Models;
 namespace ProjectPRN232.Controllers.admin
 {
     [Route("api/[controller]")]
+    [Authorize (Roles = "Admin")]
     [ApiController]
     public class PeopleController : ControllerBase
     {
@@ -21,11 +23,12 @@ namespace ProjectPRN232.Controllers.admin
             _context = context;
         }
 
+
         // GET: api/People
         [HttpGet("getListOfUsers")]
         public async Task<ActionResult<IEnumerable<Person>>> GetPeople()
         {
-            var items = await _context.People.Select(p => new PersonDetail
+            var items = await _context.People.Where(u => u.RoleAccount != true).Select(p => new PersonDetail
             {
                 UserName = p.UserName,
                 FullName = p.Fname + " " + p.Lname,
@@ -70,21 +73,7 @@ namespace ProjectPRN232.Controllers.admin
         }
 
 
-        // DELETE: api/People/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePerson(int id)
-        {
-            var person = await _context.People.FindAsync(id);
-            if (person == null)
-            {
-                return NotFound();
-            }
-
-            _context.People.Remove(person);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
+        
 
         private bool PersonExists(int id)
         {
