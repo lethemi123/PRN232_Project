@@ -24,6 +24,8 @@ builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<Cart>();
 builder.Services.AddScoped<Order>();
+builder.Services.AddScoped<AdminOrderService>();
+
 
 // ============================
 // JWT Authentication
@@ -131,7 +133,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
-
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 

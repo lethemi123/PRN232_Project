@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using ProjectPRN232.DTO;
+using ProjectPRN232.DTO.Auth;
 using ProjectPRN232.Models;              // Person
 using ProjectPRN232.Services;            // ResetTokenService
 using System.IdentityModel.Tokens.Jwt;

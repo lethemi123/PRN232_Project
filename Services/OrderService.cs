@@ -56,7 +56,6 @@ namespace ProjectPRN232.Services
                 total += price * qty;
             }
 
-            // Balance double?
             var balance = (decimal)(user.Balance ?? 0.0);
             if (balance < total)
             {

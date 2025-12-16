@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectPRN232.DTO;
+using ProjectPRN232.DTO.Auth;
 using ProjectPRN232.Models;
 
 namespace ProjectPRN232.Controllers.admin

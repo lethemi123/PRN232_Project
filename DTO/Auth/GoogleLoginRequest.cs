@@ -1,4 +1,4 @@
-﻿namespace ProjectPRN232.DTO
+﻿namespace ProjectPRN232.DTO.Auth
 {
     public class GoogleLoginRequest
     {

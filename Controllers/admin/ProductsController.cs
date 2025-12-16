@@ -1,123 +1,103 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+using ProjectPRN232.DTO.Reponse;
 using ProjectPRN232.Models;
 
-namespace ProjectPRN232.Controllers.admin
+namespace ProjectPRN232.Controllers.Admin
 {
-    [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
     [ApiController]
-    public class ProductsController : ControllerBase
+    [Route("api/admin/products")]
+    [Authorize(Roles = "Admin")]
+    public class AdminProductsController : ControllerBase
     {
         private readonly Prn212AssignmentContext _context;
+        public AdminProductsController(Prn212AssignmentContext context) => _context = context;
 
-        public ProductsController(Prn212AssignmentContext context)
+        // GET: /api/admin/products?search=iphone
+        [HttpGet("ListProduct")]
+        public async Task<IActionResult> GetProducts([FromQuery] string? search = null)
         {
-            _context = context;
-        }
+            var query = _context.Products
+                .Include(p => p.Category)
+                .AsQueryable();
 
-        // GET: api/Products
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
-        {
-            return await _context.Products.ToListAsync();
-        }
-
-        // GET: api/Products/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-
-            if (product == null)
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                return NotFound();
+                var s = search.Trim().ToLower();
+                query = query.Where(p => p.ProductName.ToLower().Contains(s));
             }
 
-            return product;
-        }
-
-        // PUT: api/Products/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(int id, Product product)
-        {
-            if (id != product.ProductId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(product).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id))
+            var listItems = await query
+                .Select(p => new ProductRespone
                 {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    Description = p.ProductDescription ?? "",
+                    ImageUrl = p.ImagePathProduct ?? "",
+                    CategoryName = p.Category != null ? p.Category.CategoryName : ""
+                })
+                .ToListAsync();
 
-            return NoContent();
+            return Ok(listItems);
         }
 
-        // POST: api/Products
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+ 
+        
+        // POST: /api/admin/products
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<IActionResult> Create([FromBody] ProductUpsertRequest req)
         {
-            _context.Products.Add(product);
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                if (ProductExists(product.ProductId))
-                {
-                    return Conflict();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            // check category tồn tại
+            var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId == req.CategoryId);
+            if (!categoryExists) return BadRequest(new { message = "Category not found" });
 
-            return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
-        }
-
-        // DELETE: api/Products/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            var p = new Product
             {
-                return NotFound();
-            }
+                ProductName = req.ProductName,
+                ProductDescription = req.Description,
+                ImagePathProduct = req.ImageUrl,
+                CategoryId = req.CategoryId,
+             
+            };
 
-            _context.Products.Remove(product);
+            _context.Products.Add(p);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+           return CreatedAtAction(nameof(GetProducts), new { id = p.ProductId }, new { message = "Created", productId = p.ProductId });
         }
 
-        private bool ProductExists(int id)
+        // PUT: /api/admin/products/{id}
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] ProductUpsertRequest req)
         {
-            return _context.Products.Any(e => e.ProductId == id);
+            var p = await _context.Products.FirstOrDefaultAsync(x => x.ProductId == id);
+            if (p == null) return NotFound(new { message = "Product not found" });
+
+            var categoryExists = await _context.Categories.AnyAsync(c => c.CategoryId.Equals(req.CategoryId));
+            if (!categoryExists) return BadRequest(new { message = "Category not found" });
+
+            p.ProductName = req.ProductName;
+            p.ProductDescription = req.Description;
+            p.ImagePathProduct = req.ImageUrl;
+            p.CategoryId = req.CategoryId;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Updated" });
+        }
+
+        // DELETE: /api/admin/products/{id}
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var p = await _context.Products.FirstOrDefaultAsync(x => x.ProductId == id);
+            if (p == null) return NotFound(new { message = "Product not found" });
+
+            _context.Products.Remove(p);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Deleted" });
         }
     }
 }

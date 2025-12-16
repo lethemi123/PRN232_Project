@@ -1,109 +1,118 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+using ProjectPRN232.DTO.Reponse;
 using ProjectPRN232.Models;
 
-namespace ProjectPRN232.Controllers.admin
+namespace ProjectPRN232.Controllers.Admin
 {
-    [Route("api/[controller]")]
-    [Authorize( Roles = "Admin")]
     [ApiController]
-    public class ProductVariantsController : ControllerBase
+    [Route("api/admin/product-variants")]
+    [Authorize(Roles = "Admin")]
+    public class AdminProductVariantsController : ControllerBase
     {
         private readonly Prn212AssignmentContext _context;
+        public AdminProductVariantsController(Prn212AssignmentContext context) => _context = context;
 
-        public ProductVariantsController(Prn212AssignmentContext context)
-        {
-            _context = context;
-        }
-
-        // GET: api/ProductVariants
+        // GET: /api/admin/product-variants?productId=1
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductVariant>>> GetProductVariants()
+        public async Task<IActionResult> GetVariants([FromQuery] int? productId = null)
         {
-            return await _context.ProductVariants.ToListAsync();
-        }
+            var query = _context.ProductVariants
+                .Include(v => v.Product)
+                .AsQueryable();
 
-        // GET: api/ProductVariants/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ProductVariant>> GetProductVariant(int id)
-        {
-            var productVariant = await _context.ProductVariants.FindAsync(id);
+            if (productId.HasValue)
+                query = query.Where(v => v.ProductId == productId.Value);
 
-            if (productVariant == null)
-            {
-                return NotFound();
-            }
-
-            return productVariant;
-        }
-
-        // PUT: api/ProductVariants/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProductVariant(int id, ProductVariant productVariant)
-        {
-            if (id != productVariant.VariantId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(productVariant).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductVariantExists(id))
+            var data = await query
+                .Select(v => new VariantRespone
                 {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                    VariantId = v.VariantId,
+                    ProductId = v.ProductId,
+                    ProductName = v.Product.ProductName,
+                    VariantName = v.Storage ?? "",
+                    Price = v.Price ?? 0,
+                    Stock = v.Stock ?? 0,
+                    ImageUrl = v.Product.ImagePathProduct ?? ""
+                })
+                .ToListAsync();
 
-            return NoContent();
+            return Ok(data);
         }
 
-        // POST: api/ProductVariants
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // GET: /api/admin/product-variants/{id}
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var item = await _context.ProductVariants
+                .Include(v => v.Product)
+                .Where(v => v.VariantId == id)
+                .Select(v => new VariantRespone
+                {
+                    VariantId = v.VariantId,
+                    ProductId = v.ProductId,
+                    ProductName = v.Product.ProductName,
+                    VariantName = v.Storage ?? "",
+                    Price = v.Price ?? 0,
+                    Stock = v.Stock ?? 0,
+                    ImageUrl = v.Product.ImagePathProduct ?? ""
+                })
+                .FirstOrDefaultAsync();
+
+            if (item == null) return NotFound(new { message = "Variant not found" });
+            return Ok(item);
+        }
+
+        // POST: /api/admin/product-variants
         [HttpPost]
-        public async Task<ActionResult<ProductVariant>> PostProductVariant(ProductVariant productVariant)
+        public async Task<IActionResult> Create([FromBody] VariantUpsertRequest req)
         {
-            _context.ProductVariants.Add(productVariant);
-            await _context.SaveChangesAsync();
+            var product = await _context.Products.FindAsync(req.ProductId);
+            if (product == null)
+                return BadRequest(new { message = "Product not found" });
 
-            return CreatedAtAction("GetProductVariant", new { id = productVariant.VariantId }, productVariant);
-        }
-
-        // DELETE: api/ProductVariants/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProductVariant(int id)
-        {
-            var productVariant = await _context.ProductVariants.FindAsync(id);
-            if (productVariant == null)
+            var v = new ProductVariant
             {
-                return NotFound();
-            }
+                ProductId = req.ProductId,
+                Storage = req.VariantName,
+                Price = req.Price,
+                Stock = req.Stock
+            };
 
-            _context.ProductVariants.Remove(productVariant);
+            _context.ProductVariants.Add(v);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { message = "Created", v.VariantId });
         }
 
-        private bool ProductVariantExists(int id)
+        // PUT: /api/admin/product-variants/{id}
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] VariantUpsertRequest req)
         {
-            return _context.ProductVariants.Any(e => e.VariantId == id);
+            var v = await _context.ProductVariants.FindAsync(id);
+            if (v == null) return NotFound(new { message = "Variant not found" });
+
+            v.Storage = req.VariantName;
+            v.Price = req.Price;
+            v.Stock = req.Stock;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Updated" });
+        }
+
+        // DELETE: /api/admin/product-variants/{id}
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var v = await _context.ProductVariants.FindAsync(id);
+            if (v == null) return NotFound(new { message = "Variant not found" });
+
+            _context.ProductVariants.Remove(v);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Deleted" });
         }
     }
 }
